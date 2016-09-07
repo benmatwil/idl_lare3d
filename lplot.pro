@@ -1,4 +1,4 @@
-pro lplot, energy=energy, magnetic=magnetic, internal=internal, kinetic=kinetic, logke=logke, total=total, all=all, fast=fast, relax=relax, recon=recon, png=png, filename=filename, xr=xr, yr=yr, legpos=legpos, ohmic=ohmic, shift=shift, thick=thick, scale=scale, xlog=xlog, ylog=ylog, plt=plt, xtitle=xtitle, ytitle=ytitle, intepar=intepar, notitle=notitle
+pro lplot, energy=energy, magnetic=magnetic, internal=internal, kinetic=kinetic, logke=logke, total=total, all=all, fast=fast, relax=relax, recon=recon, png=png, filename=filename, xr=xr, yr=yr, legpos=legpos, ohmic=ohmic, shift=shift, thick=thick, scale=scale, xlog=xlog, ylog=ylog, plt=plt, xtitle=xtitle, ytitle=ytitle, intepar=intepar, notitle=notitle, vdata=vdata, hdata=hdata, axistxtsize=axistxtsize
 
 ; Line plots one of a range of different plots from LARE data
 ; Inputs:
@@ -81,17 +81,23 @@ if keyword_set(energy) then begin
 	      me = temporary(me)/me0
 	      ie = temporary(ie)/me0
 	      ke = temporary(ke)/me0
+	      vh = temporary(vh)/me0
+	      oh = temporary(oh)/me0
+	      ah = temporary(ah)/me0
 	      tne = temporary(tne)/me0
-        me1 = me - me[sz]
-        ke1 = ke - ke[0] + me1[sz]
+        ke1 = ke - ke[0]
+        me1 = me - me[sz] + ke[sz]
         ie1 = ie - ie[0] + ke1[sz]
-        mult1 = 80;fix(me1[0]/max(ke1))
+        oh1 = oh - oh[0]
+        vh1 = vh - vh[0] + oh1[sz]
+        ah1 = ah - ah[0] + vh1[sz]
+        mult1 = 80
         ke2 = mult1*ke1
         mult = 5
-	      pltval = [[tne-tne[0]+1.1*me1[0]], [me1], [ke1], [ie1], [ke2]]*(10d)^mult
-	      ltit = ['Total Normalised Energy','Magnetic Energy','Kinetic Energy','Internal Energy','Kinetic Energy $\times$'+strcompress(string(mult1))]
-	      cval = ["black","blue","cyan","lime","cyan"]
-	      style = ['-','-','-','-','--']
+	      pltval = [[tne-tne[0]+1.1*me1[0]], [me1], [ke1], [ie1], [oh1], [vh1], [ah1], [ke2]]*(10d)^mult
+	      ltit = ['Total Normalised Energy','Magnetic Energy','Kinetic Energy','Internal Energy','Ohmic Heating','Viscous Heating','Adiabatic Heating','Kinetic Energy $\times$'+strcompress(string(mult1))]
+	      cval = ["black","blue","cyan","lime","purple","orange","red","cyan"]
+	      style = ['-','-','-','-','-','-','-','--']
 	      dval = [me1(0),me1(sz)]*(10d)^mult
 	      pngname = 'energiesrecon'
 	    endif
@@ -147,7 +153,7 @@ if keyword_set(energy) then begin
       textsize = 16
     endif else margin = [0.15,0.15,0.05,0.1]
 		
-		plt = plot([time[0],time[sz]], ysize, title=title, xtitle=xtitle, ytitle=ytitle, /nodata, xr=xr, yr=yr, xlog=xlog, dim=[900,600])
+		plt = plot([time[0],time[sz]], ysize, title=title, xtitle=xtitle, ytitle=ytitle, /nodata, xr=xr, yr=yr, xlog=xlog, dim=[900,600], font_size=textsize)
 		
 		;xticks=xticks
 		
@@ -156,6 +162,7 @@ if keyword_set(energy) then begin
 
 ; Need to position legend depending on plotted lines
 		leg = legend(target=p, position=legpos, /normal)
+		;if keyword_set(axistxtsize) then plt.
 
 	endif
 
@@ -217,8 +224,8 @@ datasave = 'pngs/'+dirname+'/inteparevo.sav'
         print, i
         if (getdata(i, /empty)).time gt time[-1] then begin
           dat = getdata(i, /magnetic_field, /grid, /eta, /velocity)
-          egrid = mkeg(dat)
           bgrid = mkbg(dat)
+          egrid = mkeg(dat, bgrid=bgrid)
           dat = getdata(i, /grid)
 
           fl = fieldline3d([0,0,0.5],bgrid,dat.x,dat.y,dat.z,2d-3,1d-4,1d-2,1d-6)
@@ -242,7 +249,7 @@ datasave = 'pngs/'+dirname+'/inteparevo.sav'
   ytitle = "Reconnection rate"
   xlog = 1
   pngname = "inteparevo"
-  pdata = int
+  pdata = abs(int)
 
   start = 0 & finish = 5
   l1 = ladfit(alog10(time[start:finish]),pdata[start:finish])
@@ -253,6 +260,11 @@ datasave = 'pngs/'+dirname+'/inteparevo.sav'
   ;oplot1 = plot([time[start],time[start]],0.25*[-0.005,-0.015],/overplot)
   ;oplot2 = plot([time[finish],time[finish]],0.25*[-0.005,-0.015],/overplot)
 
+endif
+
+if vdata ne !null and hdata ne !null then begin
+  time = vdata
+  pdata = hdata
 endif
 
 if keyword_set(notitle) then begin
@@ -269,7 +281,10 @@ if keyword_set(intepar) then begin
   y2 = l2[0] + l2[1]*alog10(time)
   plt2 = plot(time, y2, /overplot, col='blue', name='$y = ' + string(l2[0], /print) + '+' + string(l2[1], /print) + 'log_{10}t $', thick=thick, linestyle='--')
   
-  print, 'Adjust x, y axes with plt.{xr,yr}=[min,max] and continue. Use leg = legend(target=[plt1,plt2], position=legpos, /normal) for a legend' & stop
+  print, 'Adjust x, y axes with plt.{xr,yr}=[min,max]'
+  print, 'Use leg = legend(target=[plt1,plt2], position=legpos, /normal) for a legend'
+  print, '.cont when ready to continue'
+  stop
   ;plt.yr=[-0.015,0]
 
   ;e = getenergy()          
