@@ -1,6 +1,6 @@
 @Start.pro
 
-.r ~/idl/trilinear_3D
+.r ~/idl/trilinear_3d
 .r create_smbgrid_v2
 .r findnull_reduction
 .r findnull_2Dbilinear
