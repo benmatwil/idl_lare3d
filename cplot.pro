@@ -1,4 +1,4 @@
-pro cplot, frame=frame, dat=dat, bgp=bgp, xy=xy, xz=xz, yz=yz, xeqy=xeqy, xeqnegy=xeqnegy, current=current, perp=perp, parallel=parallel, pressure=pressure, png=png, dims=dims, res=res, ctable=ctable, rctable=rctable, customct=customct, samelevels=samelevels, mmlevels=mmlevels, smlevels=smlevels, customlevels=customlevels, addfname=addfname, magnitude=magnitude, flines=flines, nflines=nflines, eigenvectors=eigenvectors, hires=hires, circle=circle, lines=lines, intepar=intepar, difference=difference, customfname=customfname, plotmax=plotmax, plotmin=plotmin, plotpositions=plotpositions, cplt=cplt, filename=filename, spine=spine, eparsep=eparsep, vperpsep=vperpsep, vortzsep=vortzsep, vzsep=vzsep, ylog=ylog, xlog=xlog, onesign=onesign, vorticity=vorticity, forces=forces, fast=fast, notitle=notitle
+pro cplot, frame=frame, dat=dat, bgp=bgp, xy=xy, xz=xz, yz=yz, xeqy=xeqy, xeqnegy=xeqnegy, current=current, perp=perp, parallel=parallel, pressure=pressure, png=png, dims=dims, res=res, ctable=ctable, rctable=rctable, customct=customct, samelevels=samelevels, mmlevels=mmlevels, smlevels=smlevels, customlevels=customlevels, addfname=addfname, magnitude=magnitude, flines=flines, nflines=nflines, eigenvectors=eigenvectors, hires=hires, circle=circle, lines=lines, intepar=intepar, difference=difference, customfname=customfname, plotmax=plotmax, plotmin=plotmin, plotpositions=plotpositions, cplt=cplt, filename=filename, spine=spine, eparsep=eparsep, vperpsep=vperpsep, vortzsep=vortzsep, vzsep=vzsep, ylog=ylog, xlog=xlog, onesign=onesign, vorticity=vorticity, forces=forces, fast=fast, notitle=notitle, timeline=timeline
 
 ; Plots one of a range of different plots from LARE data
 ; Inputs:
@@ -15,7 +15,7 @@ pro cplot, frame=frame, dat=dat, bgp=bgp, xy=xy, xz=xz, yz=yz, xeqy=xeqy, xeqneg
 ;     xy - z=xy plane, yz - x=yz plane, xz - y=xz plane, xeqy - x=y plane, xeqnegy - x=-y plane (Need to define the plane required)
 ;     ctable - input number of colourtable to use (rctable is the same but reverses the table)
 ;     mmlevels - input size 2 array [minlev,maxlev] with min and max of contour levels wanted, anything outside the range will be the min/max colour in the colourtable
-;     smlevels - similar to mmlevels, but symmetric so becomes [-smlevels,smlevels]
+;     smlevels - similar to mmlevels, but symmetric so becomes [-smlevels,smlevels], input of 1.2 creates range [-1.2,1.2]
 ;     customlevels - input a custom contour level array e.g. 10^findgen(10)
 ;     samelevels - same contour levels for all 5 planar plots
 ;     magnitude - magnitude of data (currents are already positive)
@@ -32,7 +32,7 @@ pro cplot, frame=frame, dat=dat, bgp=bgp, xy=xy, xz=xz, yz=yz, xeqy=xeqy, xeqneg
 ; To add new data to plot: need to add required if statements, the data to plot (pdata), the colourtable (add to lct.pro or define here)
 
 t0 = systime(/seconds)
-;if not keyword_set(dims) then dims = [750, 600]
+if not keyword_set(dims) then dims = [750, 600]
   
 ;##################################################
 
@@ -133,8 +133,8 @@ t0 = systime(/seconds)
         npd = (size(pdata))[1:3] ; size of pdata
         ss = (npt-npd)/2 ; start subscripts
         es = npt-1-ss ; end subscripts
-        mps = (npd-1)/2 ; midpoint subscripts
-    
+        ;mps = (npd-1)/2 ; midpoint subscripts
+
         if xy ne !null then begin
           x = dat.grid.x[ss[0]:es[0]] ; create x grid
           y = dat.grid.y[ss[1]:es[1]] ; create y grid
@@ -313,15 +313,13 @@ t0 = systime(/seconds)
           dbxdx = reform((b[2,1,*,0] - b[0,1,*,0])/(x[2]-x[0]))
           dbydy = reform((b[1,2,*,1] - b[1,0,*,1])/(y[2]-y[0]))
           dbxdy = reform((b[1,2,*,0] - b[1,0,*,0])/(y[2]-y[0]))
-          dbydx = reform((b[2,1,*,1] - b[0,1,*,1])/(x[2]-x[0]))
-          disb[*,i-26] = (dbxdx-dbydy)^2 + 4*dbydx*dbxdy
         endfor
         save, epar, disb, time, filename=datasave
       endelse
       
-      pdata = epar
-      opdata = disb
-      x = dat.grid.z[2:nz-1]
+      pdata = transpose(epar)
+      opdata = transpose(disb)
+      y = dat.grid.z[2:nz-1]
       title = "Evolution of $\bf E_\parallel \rm$ (filled) and the discriminant of $\bf B_\perp \rm$ (contours) along the spine"
       pngname = 'discrb'
       
@@ -353,11 +351,10 @@ t0 = systime(/seconds)
         save, vortz, time, filename=datasave
       endelse
       
-      pdata = vortz[1:nz-3,*]
-      opdata = disv
-      ;c_value = [-8,-6,-4,-2,2,4,6,8]*0.001
-      c_value = 0.01*(indgen(15)-14)
-      x = dat.grid.z[2:nz-2]
+      pdata = transpose(vortz[1:nz-3,*])
+      opdata = transpose(disv)
+      c_value = 0.01*(2*indgen(8)-14)
+      y = dat.grid.z[2:nz-2]
       title = "Evolution of $\omega_z$ along the spine"
       pngname = 'vortz'
     endif
@@ -393,22 +390,22 @@ t0 = systime(/seconds)
         save, epar, disv, time, filename=datasave
       endelse
       
-      pdata = disv
-      opdata = epar
-      x = dat.grid.z[2:nz-3]
+      pdata = transpose(disv)
+      opdata = transpose(epar)
+      y = dat.grid.z[2:nz-3]
       title = "Evolution of the discriminant of $\bf v_\perp \rm$ (filled) and $\bf E_\parallel \rm$ (contours) along the spine"
       pngname = 'discrv'
       c_value = [-8,-6,-4,-2,2,4,6,8]*0.001
     endif
-    xtitle = "Distance along spine ($z$-axis)"
-    ytitle = "$log_{10}t$"
-    ylog = 1
-    yrange = [0.05,2]
-    y = time-50
+    ytitle = "Distance along spine ($z$-axis)"
+    xtitle = "$log_{10}t$"
+    xlog = 1
+    xrange = [0.05,2]
+    x = time-50
     if fast ne !null then begin
-      y = y/fasttime(fast)
-      yrange = yrange/fasttime(fast)
-      ytitle = "$log_{10}(t/t_f)$"
+      x = x/fasttime(fast)
+      xrange = xrange/fasttime(fast)
+      xtitle = "$log_{10}(t/t_f)$"
     endif
   endif
   
@@ -426,7 +423,7 @@ t0 = systime(/seconds)
   if keyword_set(customct) then index = customct else index = bindgen(n_elements(ct)/3)
   ncolors = n_elements(index)
   
-  slev = findgen(ncolors+1)/ncolors
+  slev = dindgen(ncolors+1)/ncolors
 
 ; set the contour levels for the plot
   if keyword_set(customlevels) then begin
@@ -474,19 +471,19 @@ t0 = systime(/seconds)
   endelse
 
 ; plot the contours
-  cplt = contour(pdata, x, y, /fill, title=title, rgb_table=ct, c_value=lev, aspect_ratio=asprat, rgb_indices=index, xtitle=xtitle, ytitle=ytitle, xtickfont_size=12, ytickfont_size=12, xlog=xlog, ylog=ylog, xrange=xrange, yrange=yrange, margin=margin, xstyle=xstyle, ystyle=ystyle)
+  cplt = contour(pdata, x, y, /fill, title=title, rgb_table=ct, c_value=lev, aspect_ratio=asprat, rgb_indices=index, xtitle=xtitle, ytitle=ytitle, xtickfont_size=12, ytickfont_size=12, xlog=xlog, ylog=ylog, xrange=xrange, yrange=yrange, margin=margin, xstyle=xstyle, ystyle=ystyle, dimensions=dims)
   
   if keyword_set(plotmax) or keyword_set(plotmin) then begin
     if keyword_set(plotmax) then !null = max(pdata, loc) else !null = min(pdata, loc)
     loc = array_indices(pdata, loc)
-    if n_elements(x) eq n_elements(pdata) then plt = plot([x[loc],x[loc]], [y[loc],y[loc]], symbol="+", /overplot) else plt = plot([x[loc[0]],x[loc[0]]], [y[loc[1]],y[loc[1]]], symbol="+", /overplot)
+    if n_elements(x) eq n_elements(pdata) then plt = plot(x[loc]*[1,1], y[loc]*[1,1], symbol="+", /overplot) else plt = plot(x[loc[0]]*[1,1], y[loc[1]]*[1,1], symbol="+", /overplot)
     ;ch = cplt.crosshair
     ;if n_elements(x) eq n_elements(pdata) then ch.location = [x[loc],y[loc]] else ch.location = [x[loc[0]],y[loc[1]]]
   endif
   
   if keyword_set(plotpositions) then begin
     npos = n_elements(plotpositions)/2
-    for i = 0, npos-1 do if abs(plotpositions[0,i]) lt max(x) and abs(plotpositions[1,i]) lt max(y) then plt = plot([plotpositions[0,i],plotpositions[0,i]], [plotpositions[1,i],plotpositions[1,i]], symbol="+", sym_thick=3, /overplot, col='green')
+    for i = 0, npos-1 do if abs(plotpositions[0,i]) lt max(x) and abs(plotpositions[1,i]) lt max(y) then plt = plot(plotpositions[0,i]*[1,1], plotpositions[1,i]*[1,1], symbol="+", sym_thick=3, /overplot, col='green')
   endif
 	
 ;##################################################
@@ -509,6 +506,11 @@ t0 = systime(/seconds)
     endif
     pngname = pngname + 'eigen'
   endif
+  
+  if timeline ne !null then begin
+    yr1 = cplt.yrange
+    plt = plot(timeline*[1,1],yr1,'--',/overplot)
+  endif
 
   if cplt['axis2'] ne !null then cplt['axis2'].delete
   if cplt['axis3'] ne !null then cplt['axis3'].delete
@@ -519,7 +521,7 @@ t0 = systime(/seconds)
   l1 = min(lev) & dl = max(lev) - l1
   if keyword_set(mmlevels) then begin & l1 = mmlevels[0] & dl = mmlevels[1] - l1 & endif
   cblev = dl*findgen(5)/4 + l1 ; assumes symmetric/uniform colourbar, needs changing for customlev
-  cb = colorbar(range=[0,1]*dl + l1, tickvalues=cblev, tickname=string(cblev, format='(F0.3)'), orientation=cborient, target=cplt, /relative, position=cbpos, tickdir=1, ticklen=0.25)
+  cb = colorbar(range=[0,1]*dl + l1, tickvalues=cblev, tickname=string(cblev, format='(F0.3)'), orientation=cborient, target=cplt, /relative, position=cbpos, tickdir=1, ticklen=0.25, taper=0)
   
   if keyword_set(xeqy) or keyword_set(xeqnegy) then begin
     cplt.translate, 0, 0.06, /normal
@@ -547,8 +549,6 @@ t0 = systime(/seconds)
     print, "Saved as " + filename
   endif
   
-  print, "Plotting took " + string(long(systime(/seconds) - t0),format='(I6)') + " seconds"
-
 end
 
 ;    for j = 1, 5 do begin
