@@ -59,8 +59,8 @@ pro view3d, frame, png=png, jval=jval, bval=bval, epval=epval, fan=fan, sideview
     ;nulls = getnulls(frame)
     ;nullpos = nulls.pos
     ;nulltype = nulls.type-1
-    ;!null = findnull_3D_v2(bgrid,xx,yy,zz,tol=1.0d-7,accur=5.0d-5,nullpos=nullpos)
-    nullpos = [0,0,0]
+    !null = findnull_3D_v2(bgrid,xx,yy,zz,tol=1.0d-7,accur=5.0d-5,nullpos=nullpos)
+    ;nullpos = [0,0,0]
   endif
   
   if keyword_set(sep) then begin

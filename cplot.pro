@@ -313,6 +313,8 @@ if not keyword_set(dims) then dims = [750, 600]
           dbxdx = reform((b[2,1,*,0] - b[0,1,*,0])/(x[2]-x[0]))
           dbydy = reform((b[1,2,*,1] - b[1,0,*,1])/(y[2]-y[0]))
           dbxdy = reform((b[1,2,*,0] - b[1,0,*,0])/(y[2]-y[0]))
+          dbydx = reform((b[2,1,*,1] - b[0,1,*,1])/(x[2]-x[0]))
+          disb[*,i-26] = (dbxdx-dbydy)^2 + 4*dbydx*dbxdy
         endfor
         save, epar, disb, time, filename=datasave
       endelse

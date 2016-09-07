@@ -219,20 +219,6 @@ function fieldline3d,startpt,bgrid,x,y,z,h,hmin,hmax,epsilon,mxline=mxline,onewa
       h = t*h
       if h lt hmin then h = hmin
       if h gt hmax then h = hmax
-
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
       
       count++
 
