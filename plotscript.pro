@@ -101,11 +101,11 @@ pro wavefronts
     
     for j = 0, npts-1 do points[*,j] = points[*,j] + (dir[*,j,0]*sp[j,0]+dir[*,j,1]*sp[j,1])*dt
     
-    if i eq 35 then begin
-      cplot, /current, xz=0, fr=i, diff=25, smlev=0.02, cplt=cplt, filename=filename, plotpositions=points, /notitle
+    if i gt 25 then begin
+      cplot, /current, xz=0, fr=i, diff=25, smlev=0.02, cplt=cplt, filename=filename, plotpositions=points, /notitle, dims=[600,600]
       filename = strjoin(strsplit(filename, '.p', /extract, /regex),'speed2.p')
       cplt.save, filename, width=1000 & cplt.close & print, "Saved as " + filename
-      stop
+      ;stop
     endif
     
     ;for k = 0, npts-1 do if abs(points[0,k]) lt 1 and abs(points[1,k]) lt 1 then plt = plot([points[0,k],points[0,k]], [points[1,k],points[1,k]], symbol="+", color=col, /overplot)
