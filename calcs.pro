@@ -74,7 +74,18 @@ function fasttime, frame, recalculate=recalculate
     tfzneg = total((cf[nx/2,ny/2,0:nz/2-1]+cf[nx/2,ny/2-1,0:nz/2-1]+cf[nx/2-1,ny/2,0:nz/2-1]+cf[nx/2-1,ny/2-1,0:nz/2-1])/(2*nz))
   
     return, min([tfxpos, tfxneg, tfypos, tfyneg, tfzpos, tfzneg])
-  endif else return, 0.36789939d0
+  endif else return, 0.38636466249575013d0
+  ;b2
+  ;0.30064919395138334
+  
+  ;b1
+  ;0.38636466249575013
+  ;0.38636369633363948
+  
+  ;b0.5
+  ;0.44417571392523025
+  ;0.44417541373613512
+  ;0.44417421298401794
 
 end
 
@@ -166,7 +177,7 @@ function jz, d
   dbxdy = dblarr(nx+1,ny-1,nz)
 
   for i = 0, nx-2 do dbydx[i,*,*] = (d.by[i+1,*,*]-d.by[i,*,*])/(d.x[i+1]-d.x[i])
-	for i = 0, ny-2 do dbxdy[*,i,*] = (d.bx[*,i+1,*]-d.bx[*,i,*])/(d.y[i+1]-d.y[i])
+  for i = 0, ny-2 do dbxdy[*,i,*] = (d.bx[*,i+1,*]-d.bx[*,i,*])/(d.y[i+1]-d.y[i])
 
   return, dbydx[*,1:ny-1,*] - dbxdy[1:nx-1,*,*]
 
@@ -181,11 +192,11 @@ function jcrossbx, d
 
   bz = (d.bz[1:-1,*,*]+d.bz[0:-2,*,*])/2
   by = (d.by[1:-1,*,*]+d.by[0:-2,*,*])/2
-
+  
   jybz = jy(d)*bz[*,*,1:-2]
   jzby = jz(d)*by[*,1:-2,*]
 
-  return, (jybz[*,0:-2,*]+jybz[*,1:-1,*] - jzby[*,*,0:-2]+jzby[*,*,1:-1])/2
+  return, (jybz[*,0:-2,*]+jybz[*,1:-1,*] - (jzby[*,*,0:-2]+jzby[*,*,1:-1]))/2
 
 end
 
@@ -198,10 +209,10 @@ function jcrossby, d
   bx = (d.bx[*,1:-1,*]+d.bx[*,0:-2,*])/2
   bz = (d.bz[*,1:-1,*]+d.bz[*,0:-2,*])/2
 
-  jzbx = jz(d)*bx[1:-2,*,*]
+  jzbx = jz(d)*bx[1:-2,*,*] 
   jxbz = jx(d)*bz[*,*,1:-2]
 
-  return, (jzbx[*,*,0:-2]+jzbx[*,*,1:-1] - jxbz[0:-2,*,*]+jxbz[1:-1,*,*])/2
+  return, (jzbx[*,*,0:-2]+jzbx[*,*,1:-1] - (jxbz[0:-2,*,*]+jxbz[1:-1,*,*]))/2
 
 end
 
@@ -217,7 +228,7 @@ function jcrossbz, d
   jxby = jx(d)*by[*,1:-2,*]
   jybx = jy(d)*bx[1:-2,*,*]
 
-  return, (jxby[0:-2,*,*]+jxby[1:-1,*,*] - jybx[*,0:-2,*]+jybx[*,1:-1,*])/2
+  return, (jxby[0:-2,*,*]+jxby[1:-1,*,*] - (jybx[*,0:-2,*]+jybx[*,1:-1,*]))/2
 
 end
 
@@ -274,8 +285,6 @@ function mkbg, d, vertex=vertex
 	  
 	  bgrid = dblarr(d.grid.npts[0]-2,d.grid.npts[1]-2,d.grid.npts[2]-2,3)
 	  
-	  stop
-	  
     bgrid[*,*,*,0] = d.bx[1:-2,0:-2,0:-2] + d.bx[1:-2,0:-2,1:-1] + d.bx[1:-2,1:-1,0:-2] + d.bx[1:-2,1:-1,1:-1]
     bgrid[*,*,*,1] = d.by[0:-2,1:-2,0:-2] + d.by[0:-2,1:-2,1:-1] + d.by[1:-1,1:-2,0:-2] + d.by[1:-1,1:-2,1:-1]
     bgrid[*,*,*,2] = d.bz[0:-2,0:-2,1:-2] + d.bz[0:-2,1:-1,1:-2] + d.bz[1:-1,0:-2,1:-2] + d.bz[1:-1,1:-1,1:-2]
@@ -320,11 +329,18 @@ end
 
 ;##################################################
 
-function mkeg, d, bgrid=bgrid
+function mkeg, d, bgrid=bgrid, jgrid=jgrid
 
 ; makes electric field grid at the vertices of the grid
-	
-	bgrid = mkbg(d,/v)
+
+  if bgrid ne !null then begin
+    bgrid1 = bgrid
+    bgrid = gridmove(bgrid)
+    delete = 0
+  endif else begin
+    bgrid = mkbg(d,/v)
+    delete = 1
+  endelse
 	vgrid = bgrid
   vgrid[*,*,*,0] = d.vx[1:-2,1:-2,1:-2]
   vgrid[*,*,*,1] = d.vy[1:-2,1:-2,1:-2]
@@ -332,12 +348,13 @@ function mkeg, d, bgrid=bgrid
   
   vcrossb = bgrid
   for i = -3,-1 do vcrossb[*,*,*,i] = bgrid[*,*,*,i+2]*vgrid[*,*,*,i+1] - bgrid[*,*,*,i+1]*vgrid[*,*,*,i+2]
-  
+  if delete eq 1 then bgrid = !null else bgrid = bgrid1
   vgrid = !null
-  jgrid = mkjg(d)
+  if (size(jgrid))[0] ne 4 then jgrid = mkjg(d)
   egrid = jgrid
+  eta = gridmove(d.eta)
 
-  for i = 0, 2 do egrid[*,*,*,i] = gridmove(d.eta)*jgrid[*,*,*,i] - vcrossb[*,*,*,i]
+  for i = 0, 2 do egrid[*,*,*,i] = eta*jgrid[*,*,*,i] - vcrossb[*,*,*,i]
 
   return, egrid
 
@@ -595,15 +612,9 @@ end
 
 function eparallel, d
 
-; calculates the component of E parallel to B
+; calculates the components of E parallel to B
 
-  nx = d.grid.npts[0]-3
-  ny = d.grid.npts[1]-3
-  nz = d.grid.npts[2]-3
-
-  epar = gridmove(jparallel(d))*d.eta[1:nx,1:ny,1:nz]
-
-  return, epar
+  return, gridmove(jparallel(d))*d.eta[1:-2,1:-2,1:-2]
 
 end
 
@@ -611,8 +622,8 @@ end
 
 function intepar, d, fl, egrid
 
-; calculates the integral of E parallel along a set of fieldlines defined by points in stpt
-; outputs a structure with the integrals and the endpoints of the fieldlines and the magentic field value at each start point.
+; calculates the integral of E parallel along a set of fieldlines defined by points in fl
+; returns the integral and the length of the field line the calculation is done on
 
   nx = d.grid.npts[0]-2
   ny = d.grid.npts[1]-2
