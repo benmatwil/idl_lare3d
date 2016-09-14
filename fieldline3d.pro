@@ -87,7 +87,7 @@ function fieldline3d, startpt, bgrid, x, y, z, h, hmin, hmax, epsilon, mxline=mx
   if keyword_set(oneway) then ih = [h] else ih = [h,-h]
   foreach h, ih do begin
 
-    count = 0
+    count = 0L
     out = 0
     
     if (h lt 0) then begin
@@ -169,10 +169,58 @@ function fieldline3d, startpt, bgrid, x, y, z, h, hmin, hmax, epsilon, mxline=mx
       ;optimum stepsize
       diff = rtest5 - rtest4
       err = sqrt(diff[0]^2 + diff[1]^2 + diff[2]^2)
-      t = (epsilon*abs(h)/(2*err))^0.25 ; do we want to update this
+      t = (epsilon*abs(h)/(2*err))^0.25d ; do we want to update this
+      
+      if (abs(t*h) < hmin) then t = hmin/abs(h)
+      if (t > 1d) then t = 1d
+      
+      rt = r0
+      b = trilinear_3d(rt[0],rt[1],rt[2],bgrid,x,y,z)
+      k1 = t*hvec*b/sqrt(b[0]^2+b[1]^2+b[2]^2)
+      rt = r0 + b2*k1
 
-      if t lt 0.1 then t = 0.1
-      if t gt 4 then t = 4
+      if rt[0] lt xmin or rt[0] gt xmax or rt[1] lt ymin or rt[1] gt ymax or rt[2] lt zmin or rt[2] gt zmax then begin
+        rout = rt
+        out = 1 & break
+      endif
+
+      b = trilinear_3d(rt[0],rt[1],rt[2],bgrid,x,y,z)
+      k2 = t*hvec*b/sqrt(b[0]^2+b[1]^2+b[2]^2)
+      rt = r0 + b3*k1 + c3*k2
+
+      if rt[0] lt xmin or rt[0] gt xmax or rt[1] lt ymin or rt[1] gt ymax or rt[2] lt zmin or rt[2] gt zmax then begin
+        rout = rt
+        out = 1 & break
+      endif
+
+      b = trilinear_3d(rt[0],rt[1],rt[2],bgrid,x,y,z)
+      k3 = t*hvec*b/sqrt(b[0]^2+b[1]^2+b[2]^2)
+      rt = r0 + b4*k1 + c4*k2 + d4*k3
+
+      if rt[0] lt xmin or rt[0] gt xmax or rt[1] lt ymin or rt[1] gt ymax or rt[2] lt zmin or rt[2] gt zmax then begin
+        rout = rt
+        out = 1 & break
+      endif
+
+      b = trilinear_3d(rt[0],rt[1],rt[2],bgrid,x,y,z)
+      k4 = t*hvec*b/sqrt(b[0]^2+b[1]^2+b[2]^2)
+      rt = r0 + b5*k1 + c5*k2 + d5*k3 + e5*k4
+
+      if rt[0] lt xmin or rt[0] gt xmax or rt[1] lt ymin or rt[1] gt ymax or rt[2] lt zmin or rt[2] gt zmax then begin
+        rout = rt
+        out = 1 & break
+      endif
+
+      b = trilinear_3d(rt[0],rt[1],rt[2],bgrid,x,y,z)
+      k5 = t*hvec*b/sqrt(b[0]^2+b[1]^2+b[2]^2)
+      rf = r0 + b6*k1 + c6*k2 + d6*k3 + e6*k4 + f6*k5
+
+      if rf[0] lt xmin or rf[0] gt xmax or rf[1] lt ymin or rf[1] gt ymax or rf[2] lt zmin or rf[2] gt zmax then begin
+        rout = rf
+        out = 1 & break
+      endif
+      
+      r4 = r0 + n1*k1 + n3*k3 + n4*k4 + n5*k5
 
       h = t*h
       if h lt hmin then h = hmin
@@ -182,10 +230,10 @@ function fieldline3d, startpt, bgrid, x, y, z, h, hmin, hmax, epsilon, mxline=mx
 
       if h gt 0 then begin
         s = [[s],t]
-        line = [[line],[rtest4]]
+        line = [[line],[r4]]
       endif else begin
         s = [t,[s]]
-        line = [[rtest4],[line]]
+        line = [[r4],[line]]
       endelse
     
       ;checkline is still moving
