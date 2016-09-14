@@ -1,4 +1,4 @@
-function fieldline3d,startpt,bgrid,x,y,z,h,hmin,hmax,epsilon,mxline=mxline,oneway=oneway,boxedge=boxedge
+function fieldline3d, startpt, bgrid, x, y, z, h, hmin, hmax, epsilon, mxline=mxline, oneway=oneway, boxedge=boxedge
 
   ;startpt[3,nl] - start point for field line
   ;bgrid[nx,ny,nz,3] - magnetic field 
@@ -26,39 +26,39 @@ function fieldline3d,startpt,bgrid,x,y,z,h,hmin,hmax,epsilon,mxline=mxline,onewa
     zmax = max(z)
   endelse
 
-  ;a2 = 0.25
-  b2 = 0.25
-  ;a3 = 3./8. 
-  b3 = 3./32.
-  c3 = 9./32.
-  ;a4 = 12./13. 
-  b4 = 1932./2197.
-  c4 = -7200./2197.
-  d4 = 7296./2197.
-  ;a5 = 1.
-  b5 = 439./216. 
-  c5 = -8.
-  d5 = 3680./513.
-  e5 = -845./4104.
-  ;a6 = 0.5 
-  b6 = -8./27
-  c6 = 2. 
-  d6 = -3544./2565.
-  e6 = 1859./4104.
-  f6 = -11./40.
+  ;a2 = 0.25d
+  b2 = 0.25d
+  ;a3 = 3d/8d
+  b3 = 3d/32d
+  c3 = 9d/32d
+  ;a4 = 12d/13d
+  b4 = 1932d/2197d
+  c4 = -7200d/2197d
+  d4 = 7296d/2197d
+  ;a5 = 1d
+  b5 = 439d/216d 
+  c5 = -8d
+  d5 = 3680d/513d
+  e5 = -845d/4104d
+  ;a6 = 0.5d 
+  b6 = -8d/27d
+  c6 = 2d 
+  d6 = -3544d/2565d
+  e6 = 1859d/4104d
+  f6 = -11d/40d
 
   ;used to determine y_i+1 from y_i if using rkf45 (4th order)
-  n1 = 25./216.
-  n3 = 1408./2565.
-  n4 = 2197./4104.
-  n5 = -1./5.
+  n1 = 25d/216d
+  n3 = 1408d/2565d
+  n4 = 2197d/4104d
+  n5 = -1d/5d
     
   ;used to determine y_i+1 from y_i if using rkf54 (5th order)
-  nn1 = 16./135.
-  nn3 = 6656./12825.
-  nn4 = 28561./56430.
-  nn5 = -9./50
-  nn6 = 2./55.
+  nn1 = 16d/135d
+  nn3 = 6656d/12825d
+  nn4 = 28561d/56430d
+  nn5 = -9d/50d
+  nn6 = 2d/55d
 
   x0 = startpt[0]
   y0 = startpt[1]
@@ -104,113 +104,71 @@ function fieldline3d,startpt,bgrid,x,y,z,h,hmin,hmax,epsilon,mxline=mxline,onewa
       xx = line[0,jl]
       yy = line[1,jl]
       zz = line[2,jl]
+      
+      hvec = [h,h,h]
+      r0 = [xx,yy,zz]
 
-      xx1 = xx
-      yy1 = yy
-      zz1 = zz
-      bbf = trilinear_3d(xx1,yy1,zz1,bgrid,x,y,z)
-      bbf2 = sqrt(bbf[0]*bbf[0]+bbf[1]*bbf[1]+bbf[2]*bbf[2])
-      k1 = h*bbf[0]/bbf2
-      l1 = h*bbf[1]/bbf2
-      m1 = h*bbf[2]/bbf2
-      xx2 = xx + b2*k1
-      yy2 = yy + b2*l1
-      zz2 = zz + b2*m1
+      rt = r0
+      b = trilinear_3d(rt[0],rt[1],rt[2],bgrid,x,y,z)
+      k1 = hvec*b/sqrt(b[0]^2+b[1]^2+b[2]^2)
+      rt = r0 + b2*k1
 
-      if not (xx2 gt xmin and xx2 lt xmax and yy2 gt ymin and yy2 lt ymax and zz2 gt zmin and zz2 lt zmax) then begin
-        xout = xx2
-        yout = yy2
-        zout = zz2
+      if rt[0] lt xmin or rt[0] gt xmax or rt[1] lt ymin or rt[1] gt ymax or rt[2] lt zmin or rt[2] gt zmax then begin
+        rout = rt
         out = 1 & break
       endif
 
-      bbf = trilinear_3d(xx2,yy2,zz2,bgrid,x,y,z)
-      bbf2 = sqrt(bbf[0]*bbf[0]+bbf[1]*bbf[1]+bbf[2]*bbf[2])
-      k2 = h*bbf[0]/bbf2
-      l2 = h*bbf[1]/bbf2
-      m2 = h*bbf[2]/bbf2
-      xx3 = xx + b3*k1 + c3*k2
-      yy3 = yy + b3*l1 + c3*l2
-      zz3 = zz + b3*m1 + c3*m2
+      b = trilinear_3d(rt[0],rt[1],rt[2],bgrid,x,y,z)
+      k2 = hvec*b/sqrt(b[0]^2+b[1]^2+b[2]^2)
+      rt = r0 + b3*k1 + c3*k2
 
-      if not (xx3 gt xmin and xx3 lt xmax and yy3 gt ymin and yy3 lt ymax and zz3 gt zmin and zz3 lt zmax) then begin
-        xout = xx3
-        yout = yy3
-        zout = zz3
+      if rt[0] lt xmin or rt[0] gt xmax or rt[1] lt ymin or rt[1] gt ymax or rt[2] lt zmin or rt[2] gt zmax then begin
+        rout = rt
         out = 1 & break
       endif
 
-      bbf = trilinear_3d(xx3,yy3,zz3,bgrid,x,y,z)
-      bbf2 = sqrt(bbf[0]*bbf[0]+bbf[1]*bbf[1]+bbf[2]*bbf[2])
-      k3 = h*bbf[0]/bbf2
-      l3 = h*bbf[1]/bbf2
-      m3 = h*bbf[2]/bbf2
-      xx4 = xx + b4*k1 + c4*k2 + d4*k3
-      yy4 = yy + b4*l1 + c4*l2 + d4*l3
-      zz4 = zz + b4*m1 + c4*m2 + d4*m3
+      b = trilinear_3d(rt[0],rt[1],rt[2],bgrid,x,y,z)
+      k3 = hvec*b/sqrt(b[0]^2+b[1]^2+b[2]^2)
+      rt = r0 + b4*k1 + c4*k2 + d4*k3
 
-      if not (xx4 gt xmin and xx4 lt xmax and yy4 gt ymin and yy4 lt ymax and zz4 gt zmin and zz4 lt zmax) then begin
-        xout = xx4
-        yout = yy4
-        zout = zz4
+      if rt[0] lt xmin or rt[0] gt xmax or rt[1] lt ymin or rt[1] gt ymax or rt[2] lt zmin or rt[2] gt zmax then begin
+        rout = rt
         out = 1 & break
       endif
 
-      bbf = trilinear_3d(xx4,yy4,zz4,bgrid,x,y,z)
-      bbf2 = sqrt(bbf[0]*bbf[0]+bbf[1]*bbf[1]+bbf[2]*bbf[2])
-      k4 = h*bbf[0]/bbf2
-      l4 = h*bbf[1]/bbf2
-      m4 = h*bbf[2]/bbf2
-      xx5 = xx + b5*k1 + c5*k2 + d5*k3 + e5*k4
-      yy5 = yy + b5*l1 + c5*l2 + d5*l3 + e5*l4
-      zz5 = zz + b5*m1 + c5*m2 + d5*m3 + e5*m4
+      b = trilinear_3d(rt[0],rt[1],rt[2],bgrid,x,y,z)
+      k4 = hvec*b/sqrt(b[0]^2+b[1]^2+b[2]^2)
+      rt = r0 + b5*k1 + c5*k2 + d5*k3 + e5*k4
 
-      if not (xx5 gt xmin and xx5 lt xmax and yy5 gt ymin and yy5 lt ymax and zz5 gt zmin and zz5 lt zmax) then begin
-        xout = xx5
-        yout = yy5
-        zout = zz5
+      if rt[0] lt xmin or rt[0] gt xmax or rt[1] lt ymin or rt[1] gt ymax or rt[2] lt zmin or rt[2] gt zmax then begin
+        rout = rt
         out = 1 & break
       endif
 
-      bbf = trilinear_3d(xx5,yy5,zz5,bgrid,x,y,z)
-      bbf2 = sqrt(bbf[0]*bbf[0]+bbf[1]*bbf[1]+bbf[2]*bbf[2])
-      k5 = h*bbf[0]/bbf2
-      l5 = h*bbf[1]/bbf2
-      m5 = h*bbf[2]/bbf2
-      xx6 = xx + b6*k1 + c6*k2 + d6*k3 + e6*k4 + f6*k5
-      yy6 = yy + b6*l1 + c6*l2 + d6*l3 + e6*l4 + f6*l5
-      zz6 = zz + b6*m1 + c6*m2 + d6*m3 + e6*m4 + f6*m5
+      b = trilinear_3d(rt[0],rt[1],rt[2],bgrid,x,y,z)
+      k5 = hvec*b/sqrt(b[0]^2+b[1]^2+b[2]^2)
+      rt = r0 + b6*k1 + c6*k2 + d6*k3 + e6*k4 + f6*k5
 
-      if not (xx6 gt xmin and xx6 lt xmax and yy6 gt ymin and yy6 lt ymax and zz6 gt zmin and zz6 lt zmax) then begin
-        xout = xx6
-        yout = yy6
-        zout = zz6
+      if rt[0] lt xmin or rt[0] gt xmax or rt[1] lt ymin or rt[1] gt ymax or rt[2] lt zmin or rt[2] gt zmax then begin
+        rout = rt
         out = 1 & break
       endif
 
-      bbf = trilinear_3d(xx6,yy6,zz6,bgrid,x,y,z)
-      bbf2 = sqrt(bbf[0]*bbf[0]+bbf[1]*bbf[1]+bbf[2]*bbf[2])
-      k6 = h*bbf[0]/bbf2
-      l6 = h*bbf[1]/bbf2
-      m6 = h*bbf[2]/bbf2
+      b = trilinear_3d(rt[0],rt[1],rt[2],bgrid,x,y,z)
+      k6 = hvec*b/sqrt(b[0]^2+b[1]^2+b[2]^2)
 
-      xxnew4 = xx + n1*k1 + n3*k3 + n4*k4 + n5*k5
-      yynew4 = yy + n1*l1 + n3*l3 + n4*l4 + n5*l5
-      zznew4 = zz + n1*m1 + n3*m3 + n4*m4 + n5*m5
-      xxnew5 = xx + nn1*k1 + nn3*k3 + nn4*k4 + nn5*k5 + nn6*k6
-      yynew5 = yy + nn1*l1 + nn3*l3 + nn4*l4 + nn5*l5 + nn6*l6
-      zznew5 = zz + nn1*m1 + nn3*m3 + nn4*m4 + nn5*m5 + nn6*m6
+      rtest4 = r0 + n1*k1 + n3*k3 + n4*k4 + n5*k5
+      rtest5 = r0 + nn1*k1 + nn3*k3 + nn4*k4 + nn5*k5 + nn6*k6
 
       ;check that line is still in domain
-      if not (xxnew4 gt xmin and xxnew4 lt xmax and yynew4 gt ymin and yynew4 lt ymax and zznew4 gt zmin and zznew4 lt zmax) then begin
-        xout = xxnew4
-        yout = yynew4
-        zout = zznew4
+      if rtest4[0] lt xmin or rtest4[0] gt xmax or rtest4[1] lt ymin or rtest4[1] gt ymax or rtest4[2] lt zmin or rtest4[2] gt zmax then begin
+        rout = rtest4
         out = 1 & break
       endif
 
       ;optimum stepsize
-      err = sqrt((xxnew5-xxnew4)^2 + (yynew5-yynew4)^2 + (zznew5-zznew4)^2)
+      diff = rtest5 - rtest4
+      err = sqrt(diff[0]^2 + diff[1]^2 + diff[2]^2)
       t = (epsilon*abs(h)/(2*err))^0.25 ; do we want to update this
 
       if t lt 0.1 then t = 0.1
@@ -224,51 +182,41 @@ function fieldline3d,startpt,bgrid,x,y,z,h,hmin,hmax,epsilon,mxline=mxline,onewa
 
       if h gt 0 then begin
         s = [[s],t]
-        line = [[line],[xxnew4,yynew4,zznew4]]
+        line = [[line],[rtest4]]
       endif else begin
         s = [t,[s]]
-        line = [[xxnew4,yynew4,zznew4],[line]]
+        line = [[rtest4],[line]]
       endelse
     
       ;checkline is still moving
       if (count ge 2) then begin
         if h gt 0 then il = count-1 else il = 1
-          dlx = line[0,il]-line[0,il-1]
-          dly = line[1,il]-line[1,il-1]
-          dlz = line[2,il]-line[2,il-1]
-          dl = sqrt(dlx*dlx+dly*dly+dlz*dlz)
-        if (h gt 0 and dl lt hmin*0.5) or (h lt 0 and dl lt abs(hmax*0.5)) then break
+          dl = line[*,il]-line[*,il-1]
+          mdl = sqrt(dl[0]^2+dl[1]^2+dl[2]^2)
+        if (h gt 0 and mdl lt hmin*0.5) or (h lt 0 and mdl lt abs(hmax*0.5)) then break
       endif
 
     end
 
     if out eq 1 then begin
       if h gt 0 then il = count-1 else il = 0
-        xin = line[0,il]
-        yin = line[1,il]
-        zin = line[2,il]
-      if xout gt xmax or xout lt xmin then begin
-        if xout gt xmax then x0 = xmax else x0 = xmin
-        s = (x0-xin)/(xout-xin)
-        xout = x0
-        yout = s*(yout-yin)+yin
-        zout = s*(zout-zin)+zin
+        rin = line[*,il]
+      if rout[0] gt xmax or rout[0] lt xmin then begin
+        if rout[0] gt xmax then xedge = xmax else xedge = xmin
+        s = (xedge-rin[0])/(rout[0]-rin[0])
+        rout = [xedge, s*(rout[1]-rin[1])+rin[1], s*(rout[2]-rin[2])+rin[2]]
       endif
-      if yout gt ymax or yout lt ymin then begin
-        if yout gt ymax then y0 = ymax else y0 = ymin
-        s = (y0-yin)/(yout-yin)
-        yout = y0
-        xout = s*(xout-xin)+xin
-        zout = s*(zout-zin)+zin
+      if rout[1] gt ymax or rout[1] lt ymin then begin
+        if rout[1] gt ymax then yedge = ymax else yedge = ymin
+        s = (yedge-rin[1])/(rout[1]-rin[1])
+        rout = [s*(rout[0]-rin[0])+rin[0], yedge, s*(rout[2]-rin[2])+rin[2]]
       endif
-      if zout gt zmax or zout lt zmin then begin
-        if zout gt zmax then z0 = zmax else z0 = zmin
-        s = (z0-zin)/(zout-zin)
-        zout = z0
-        xout = s*(xout-xin)+xin
-        yout = s*(yout-yin)+yin
+      if rout[2] gt zmax or rout[2] lt zmin then begin
+        if rout[2] gt zmax then zedge = zmax else zedge = zmin
+        s = (zedge-rin[2])/(rout[2]-rin[2])
+        rout = [s*(rout[0]-rin[0])+rin[0], s*(rout[1]-rin[1])+rin[1], zedge]
       endif
-      if h gt 0 then line = [[line],[xout,yout,zout]] else line = [[xout,yout,zout],[line]]
+      if h gt 0 then line = [[line],[rout]] else line = [[rout],[line]]
     endif
 
   endforeach
