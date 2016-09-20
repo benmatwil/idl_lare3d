@@ -1,4 +1,20 @@
-function fieldline3d, startpt, bgrid, x, y, z, h, hmin, hmax, epsilon, mxline=mxline, oneway=oneway, boxedge=boxedge
+function getdr r, x, y, z
+  i = floor(r[0])
+  j = floor(r[1])
+  k = floor(r[2])
+  
+  dx1 = x[i]-x[i-1]
+  dy1 = y[j]-y[j-1]
+  dz1 = z[k]-z[k-1]
+  
+  xh = x[i-1] + dx1/2
+  yh = y[j-1] + dy1/2
+  zh = z[k-1] + dz1/2
+
+  return, [dx1, dy1, dz1]
+end
+
+function fieldline3d, startpt, bgrid, x, y, z, h, hmin, hmax, epsilon, mxline=mxline, oneway=oneway, boxedge=boxedge, xxr=xxr,yyr=yyr,zzr=zzr
 
   ;startpt[3,nl] - start point for field line
   ;bgrid[nx,ny,nz,3] - magnetic field 
@@ -90,23 +106,21 @@ function fieldline3d, startpt, bgrid, x, y, z, h, hmin, hmax, epsilon, mxline=mx
     count = 0L
     out = 0
     
-    if (h lt 0) then begin
-      minh = -hmax
-      maxh = -hmin
-      hmin = minh
-      hmax = maxh
-    endif
-
     while count lt mxline do begin
 
       if h gt 0 then jl = count else jl = 0
+      bounce = 0
       t = s[jl]
-      xx = line[0,jl]
-      yy = line[1,jl]
-      zz = line[2,jl]
       
-      hvec = [h,h,h]
-      r0 = [xx,yy,zz]
+      r0 = line[*,jl]
+
+      if keyword_set(xxr) then begin
+        dr = getdr(r0, xxr, yyr, zzr)
+        mindist = min(dl)*h
+        hvec = mindist/dl
+      endif else begin
+        hvec = [h,h,h]
+      endelse
 
       rt = r0
       b = trilinear_3d(rt[0],rt[1],rt[2],bgrid,x,y,z)
@@ -171,9 +185,10 @@ function fieldline3d, startpt, bgrid, x, y, z, h, hmin, hmax, epsilon, mxline=mx
       err = sqrt(diff[0]^2 + diff[1]^2 + diff[2]^2)
       t = (epsilon*abs(h)/(2*err))^0.25d ; do we want to update this
       
-      if (abs(t*h) < hmin) then t = hmin/abs(h)
-      if (t > 1d) then t = 1d
-      
+      if (abs(t*h) < abs(hmin)) then t = abs(hmin/h)
+      t0 = 1.1d
+      if (t > t0) then t = t0
+            
       rt = r0
       b = trilinear_3d(rt[0],rt[1],rt[2],bgrid,x,y,z)
       k1 = t*hvec*b/sqrt(b[0]^2+b[1]^2+b[2]^2)
@@ -223,8 +238,8 @@ function fieldline3d, startpt, bgrid, x, y, z, h, hmin, hmax, epsilon, mxline=mx
       r4 = r0 + n1*k1 + n3*k3 + n4*k4 + n5*k5
 
       h = t*h
-      if h lt hmin then h = hmin
-      if h gt hmax then h = hmax
+      if abs(h) lt hmin then h = hmin*h/abs(h)
+      if abs(h) gt hmax then h = hmax*h/abs(h)
       
       count++
 
@@ -240,11 +255,20 @@ function fieldline3d, startpt, bgrid, x, y, z, h, hmin, hmax, epsilon, mxline=mx
       if (count ge 2) then begin
         if h gt 0 then il = count-1 else il = 1
           dl = line[*,il]-line[*,il-1]
-          mdl = sqrt(dl[0]^2+dl[1]^2+dl[2]^2)
-        if (h gt 0 and mdl lt hmin*0.5) or (h lt 0 and mdl lt abs(hmax*0.5)) then break
+          mdl1 = sqrt(dl[0]^2+dl[1]^2+dl[2]^2)
+        if h gt 0 then il = count-1 else il = 2
+          dl = line[*,il]-line[*,il-2]
+          mdl2 = sqrt(dl[0]^2+dl[1]^2+dl[2]^2)
+          bounce = 1
+        if mdl1 lt hmin*0.5 or mdl2 lt hmin*0.5 then break
       endif
 
     end
+    
+    if bounce eq 1 then begin
+      if il eq count-1 then line = line[*,0:-2]
+      if il eq 2 then line = line[*,1:-1]
+    endif
 
     if out eq 1 then begin
       if h gt 0 then il = count-1 else il = 0
