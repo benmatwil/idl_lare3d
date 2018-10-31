@@ -1,4 +1,4 @@
-pro cplot, frame=frame, dat=dat, bgp=bgp, xy=xy, xz=xz, yz=yz, xeqy=xeqy, xeqnegy=xeqnegy, current=current, perp=perp, parallel=parallel, pressure=pressure, png=png, dims=dims, res=res, ctable=ctable, rctable=rctable, customct=customct, samelevels=samelevels, mmlevels=mmlevels, smlevels=smlevels, customlevels=customlevels, addfname=addfname, magnitude=magnitude, flines=flines, nflines=nflines, eigenvectors=eigenvectors, hires=hires, circle=circle, lines=lines, intepar=intepar, difference=difference, customfname=customfname, plotmax=plotmax, plotmin=plotmin, plotpositions=plotpositions, cplt=cplt, filename=filename, spine=spine, eparsep=eparsep, vperpsep=vperpsep, vortzsep=vortzsep, vzsep=vzsep, ylog=ylog, xlog=xlog, onesign=onesign, vorticity=vorticity, forces=forces, fast=fast, notitle=notitle, timeline=timeline
+pro cplot, frame=frame, dat=dat, bgp=bgp, xy=xy, xz=xz, yz=yz, xeqy=xeqy, xeqnegy=xeqnegy, current=current, perp=perp, parallel=parallel, pressure=pressure, png=png, dims=dims, res=res, ctable=ctable, rctable=rctable, customct=customct, samelevels=samelevels, mmlevels=mmlevels, smlevels=smlevels, customlevels=customlevels, addfname=addfname, magnitude=magnitude, flines=flines, nflines=nflines, eigenvectors=eigenvectors, hires=hires, circle=circle, lines=lines, intepar=intepar, difference=difference, customfname=customfname, plotmax=plotmax, plotmin=plotmin, plotpositions=plotpositions, cplt=cplt, filename=filename, spine=spine, eparsep=eparsep, vperpsep=vperpsep, vortzsep=vortzsep, vzsep=vzsep, ylog=ylog, xlog=xlog, onesign=onesign, vorticity=vorticity, forces=forces, fast=fast, notitle=notitle, timeline=timeline, matplotlib=matplotlib
 
 ; Plots one of a range of different plots from LARE data
 ; Inputs:
@@ -471,10 +471,38 @@ if not keyword_set(dims) then dims = [750, 600]
     cbpos = [1.12, mid-cbstretch, 1.18, mid+cbstretch]
     cborient = 1
   endelse
-
+; stop
 ; plot the contours
-  cplt = contour(pdata, x, y, /fill, title=title, rgb_table=ct, c_value=lev, aspect_ratio=asprat, rgb_indices=index, xtitle=xtitle, ytitle=ytitle, xtickfont_size=12, ytickfont_size=12, xlog=xlog, ylog=ylog, xrange=xrange, yrange=yrange, margin=margin, xstyle=xstyle, ystyle=ystyle, dimensions=dims)
-  
+  ; cplt = contour(pdata, x, y, /fill, title=title, rgb_table=ct, c_value=lev, aspect_ratio=asprat, rgb_indices=index, xtitle=xtitle, ytitle=ytitle, xtickfont_size=12, ytickfont_size=12, xlog=xlog, ylog=ylog, xrange=xrange, yrange=yrange, margin=margin, xstyle=xstyle, ystyle=ystyle, dimensions=dims)
+
+  ; stop
+
+  if keyword_set(matplotlib) then begin
+  print, 'matplotlib'
+    plt = Python.Import('matplotlib.pyplot')
+    !null = Python.run('import matplotlib.pyplot as plt')
+    !null = Python.run("plt.rc('text', usetex=True)")
+    !null = Python.run("plt.rc('font', **{'size':8})")
+    !null = Python.run("plt.rc('font', **{'family':'serif', 'serif':['Computer Modern Roman']})")
+    np = Python.Import('numpy')
+    idl2mpl = Python.Import('idl2matplotlibct')
+    cmap = idl2mpl.make_colourmap(dindgen(256), ct[*, 0], ct[*, 1], ct[*, 2], 'map')
+    ; fig = plt.figure(figsize=[5/2.55, 4.5/2.55])
+    ; ax = fig.add_subplot(111)
+    fig = matplotlib[0]
+    ax = matplotlib[1]
+    !null = ax.set_aspect('equal')
+    if keyword_set(mmlevels) then mpllev = mmlevels
+    if keyword_set(smlevels) then mpllev = [-smlevels, smlevels]
+    c = ax.contourf(x, y, pdata, np.linspace(mpllev[0],mpllev[1],256), cmap=cmap, zorder=-5, extend='both')
+    !null = ax.set_rasterization_zorder(-1)
+    if strmid(xtitle, 0, 1) ne '$' then xtitle = '$' + xtitle + '$'
+    if strmid(ytitle, 0, 1) ne '$' then ytitle = '$' + ytitle + '$'
+    !null = ax.set_xlabel(xtitle)
+    !null = ax.set_ylabel(ytitle)
+    goto, finish
+  endif
+
   if keyword_set(plotmax) or keyword_set(plotmin) then begin
     if keyword_set(plotmax) then !null = max(pdata, loc) else !null = min(pdata, loc)
     loc = array_indices(pdata, loc)
@@ -550,7 +578,7 @@ if not keyword_set(dims) then dims = [750, 600]
     cplt.close
     print, "Saved as " + filename
   endif
-  
+finish:
 end
 
 ;    for j = 1, 5 do begin

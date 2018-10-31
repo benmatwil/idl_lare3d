@@ -1,20 +1,21 @@
-function getdr r, x, y, z
-  i = floor(r[0])
-  j = floor(r[1])
-  k = floor(r[2])
+function getdr, r, x, y, z
   
-  dx1 = x[i]-x[i-1]
-  dy1 = y[j]-y[j-1]
-  dz1 = z[k]-z[k-1]
+  i = max(where(r[0] gt x, /null))
+  j = max(where(r[1] gt y, /null))
+  k = max(where(r[2] gt z, /null))
+    
+  dx = x[i+1]-x[i]
+  dy = y[j+1]-y[j]
+  dz = z[k+1]-z[k]
   
-  xh = x[i-1] + dx1/2
-  yh = y[j-1] + dy1/2
-  zh = z[k-1] + dz1/2
+  xh = x[i] + dx/2
+  yh = y[j] + dy/2
+  zh = z[k] + dz/2
 
-  return, [dx1, dy1, dz1]
+  return, [dx, dy, dz]
 end
 
-function fieldline3d, startpt, bgrid, x, y, z, h, hmin, hmax, epsilon, mxline=mxline, oneway=oneway, boxedge=boxedge, xxr=xxr,yyr=yyr,zzr=zzr
+function fieldline3d, startpt, bgrid, x, y, z, h, hmin, hmax, epsilon, mxline=mxline, oneway=oneway, boxedge=boxedge, gridcoord=gridcoord
 
   ;startpt[3,nl] - start point for field line
   ;bgrid[nx,ny,nz,3] - magnetic field 
@@ -90,7 +91,7 @@ function fieldline3d, startpt, bgrid, x, y, z, h, hmin, hmax, epsilon, mxline=mx
     print, "Bounds are: ", "ymin = ", ymin, " ymax = ", ymax
     print, "Bounds are: ", "zmin = ", zmin, " zmax = ", zmax
 
-    return,0
+    return, [x0,y0,z0]
   endif
 
   if not keyword_set(mxline) then mxline = 10000
@@ -111,16 +112,14 @@ function fieldline3d, startpt, bgrid, x, y, z, h, hmin, hmax, epsilon, mxline=mx
       if h gt 0 then jl = count else jl = 0
       bounce = 0
       t = s[jl]
-      
       r0 = line[*,jl]
-
-      if keyword_set(xxr) then begin
-        dr = getdr(r0, xxr, yyr, zzr)
-        mindist = min(dl)*h
-        hvec = mindist/dl
-      endif else begin
-        hvec = [h,h,h]
-      endelse
+      
+      ;if keyword_set(gridcoord) then begin
+      ;  dr = getdr(r0, x, y, z)
+      ;  mindist = min(dr)*h
+      ;  hvec = mindist/dr
+      ;endif else 
+      hvec = [h,h,h]
 
       rt = r0
       b = trilinear_3d(rt[0],rt[1],rt[2],bgrid,x,y,z)
@@ -185,9 +184,9 @@ function fieldline3d, startpt, bgrid, x, y, z, h, hmin, hmax, epsilon, mxline=mx
       err = sqrt(diff[0]^2 + diff[1]^2 + diff[2]^2)
       t = (epsilon*abs(h)/(2*err))^0.25d ; do we want to update this
       
-      if (abs(t*h) < abs(hmin)) then t = abs(hmin/h)
+      if (abs(t*h) lt abs(hmin)) then t = abs(hmin/h)
       t0 = 1.1d
-      if (t > t0) then t = t0
+      if (t gt t0) then t = t0
             
       rt = r0
       b = trilinear_3d(rt[0],rt[1],rt[2],bgrid,x,y,z)
@@ -251,22 +250,25 @@ function fieldline3d, startpt, bgrid, x, y, z, h, hmin, hmax, epsilon, mxline=mx
         line = [[r4],[line]]
       endelse
     
-      ;checkline is still moving
+      ;check line is still moving
       if (count ge 2) then begin
-        if h gt 0 then il = count-1 else il = 1
+        if h gt 0 then il = -1 else il = 1
           dl = line[*,il]-line[*,il-1]
           mdl1 = sqrt(dl[0]^2+dl[1]^2+dl[2]^2)
-        if h gt 0 then il = count-1 else il = 2
+        if h gt 0 then il = -1 else il = 2
           dl = line[*,il]-line[*,il-2]
           mdl2 = sqrt(dl[0]^2+dl[1]^2+dl[2]^2)
+        if mdl1 lt hmin*0.5 then break
+        if mdl2 lt hmin*0.5 then begin
           bounce = 1
-        if mdl1 lt hmin*0.5 or mdl2 lt hmin*0.5 then break
+          break
+        endif
       endif
 
     end
     
     if bounce eq 1 then begin
-      if il eq count-1 then line = line[*,0:-2]
+      if il eq -1 then line = line[*,0:-2]
       if il eq 2 then line = line[*,1:-1]
     endif
 

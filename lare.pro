@@ -18,8 +18,6 @@
 
 .r plotstart
 
-.r writedat
-
 .r calcs
 
 .r mk_3dmodel

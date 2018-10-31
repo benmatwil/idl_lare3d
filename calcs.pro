@@ -47,14 +47,15 @@ function fasttime, frame, recalculate=recalculate
 
   if keyword_set(recalculate) then begin
     d = gdata(frame,/fast)
+    print, 'Data read'
     
     nx = d.grid.npts[0]-1
     ny = d.grid.npts[1]-1
     nz = d.grid.npts[2]-1
     
-    bx = (d.bx[1:nx,*,*]+d.bx[0:nx-1,*,*])/2
-    by = (d.by[*,1:ny,*]+d.by[*,0:ny-1,*])/2
-    bz = (d.bz[*,*,1:nz]+d.bz[*,*,0:nz-1])/2
+    bx = (d.bx[1:-1,*,*]+d.bx[0:-2,*,*])/2
+    by = (d.by[*,1:-1,*]+d.by[*,0:-2,*])/2
+    bz = (d.bz[*,*,1:-1]+d.bz[*,*,0:-2])/2
     
     b2 = bx^2+by^2+bz^2
     
